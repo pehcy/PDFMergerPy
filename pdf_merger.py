@@ -3,52 +3,72 @@ from tkinter.filedialog import askopenfilename
 from PyPDF2 import PdfFileMerger, PdfFileReader
 from pathlib import Path
 
+filelist = []
+
+# initiate merger Object
 merger = PdfFileMerger()
 
-queue = []
-
-def open_file():
+def open_file(files):
     filepath = askopenfilename(
         filetypes=[("PDF Files","*.pdf"), ("All Files", "*.*")]
     )
-    if not filepath or Path(filepath).exists():
+    if not(filepath and Path(filepath).exists()):
         return
-    with open (filepath, "r") as input_file:
-        queue.append(filepath)
+    files.append(filepath)
+    # list out all filenames
+    lbl_items["text"] = '\n'.join(str(f) for f in files)
+    if len(files) >= 2 and btn_merge['state'] == "disabled":
+        btn_merge["state"] = "normal"
 
 def merge_pdfs(files):
-    for filename in files:
-        merger.append(PdfFileReader(open(filename, "rb")))
+    for f in files:
+        merger.append(PdfFileReader(open(f, "rb")))
+    
+    output_filename = ent_output_name.get()
 
-def output_pdf(output_filename):
+    if not output_filename:
+        output_filename = "Untitled.pdf"
+    elif ".pdf" not in output_filename:
+        output_filename += ".pdf"
     merger.write(output_filename)
 
+# create desktop GUI
+window = tk.Tk()
+window.title("PDFMerger Tk")
+window.geometry("500x500")
+# not allowed resizing x y direction
+window.resizable(0,0)
+
+# --- Ask open files ---
+fr_bg1 = tk.Frame(window, bd=3)
+lbl_open = tk.Label(fr_bg1, text="Please choose PDFs to join: (2 and above)")
+lbl_open.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+
+btn_open = tk.Button(fr_bg1, text="Open file(s)",
+                command=lambda: open_file(filelist))
+btn_open.grid(row=1, column=0, sticky="ew", padx=5)
+lbl_items = tk.Label(fr_bg1, text="")
+lbl_items.grid(row=2, column=0, pady=5)
+fr_bg1.pack()
+
+# --- Button to merge PDFs ---
+fr_bg2 = tk.Frame(window, bd=3)
+lbl_to_merge = tk.Label(fr_bg2, text="Merge selected files (in PDF)")
+lbl_to_merge.grid(row=0, column=0, sticky="ew", padx="5", pady="5")
+
+ent_output_name = tk.Entry(master=fr_bg2, width=7)
+ent_output_name.grid(row=1, column=0, sticky="ew")
+
+btn_merge = tk.Button(fr_bg2, 
+                text="Merge PDF",
+                state="disabled",
+                command=lambda: merge_pdfs(filelist))
+btn_merge.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
+fr_bg2.pack()
+
+# --- Button to exit ---
+btn_exit = tk.Button(window, text="Exit", command=window.destroy, bd=2)
+btn_exit.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.FALSE)
+
 if __name__ == "__main__":
-    # create desktop GUI
-    window = tk.Tk()
-    window.title("PDFMerger Tk")
-    window.geometry("500x500")
-    # not allowed resizing x y direction
-    window.resizable(0,0)
-    # frame = tk.Frame(master=window, width=600, height=420)
-    # frame.pack()
-    w, h = window.winfo_screenwidth(), window.winfo_screenheight()
-    
-    fr_bg = tk.Frame(window, bd=10)
-    btn_open = tk.Button(fr_bg, text="Open File(s)",
-                command=open_file)
-    btn_open.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-    fr_bg.pack()
-
-    label_select = tk.Label(text="Select your files to be merge (in PDF format)")
-    label_select.pack()
-    
-    framed_btn = tk.Frame(window, relief=tk.RAISED, bd=2)
-    
-    # Button to merge pdfs
-    btn_merge = tk.Button(master=window,text="Merge PDF", command=merge_pdfs)
-    btn_merge.pack()
-
-    btn_append = tk.Button()
-
     window.mainloop()
