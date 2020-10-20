@@ -18,3 +18,6 @@ as I am using the latest version for Python3.
 make env python=python3
 sudo build essential make && make install
 ```
+
+## TODO
+test whether `setup.py` and makefile works while running build command
